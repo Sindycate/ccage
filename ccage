@@ -4,23 +4,67 @@ set -euo pipefail
 IMAGE="claude-code:latest"
 HOST_CLAUDE_DIR="$HOME/.claude"
 AWS_CREDS="$HOME/.aws/credentials"
-BUILD_DIR="$HOME/claude-container"
+# Resolve symlinks to find the real script directory
+SOURCE="$0"
+while [ -L "$SOURCE" ]; do
+    DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+BUILD_DIR="$SCRIPT_DIR"
 
 YOLO=0
-if [ "${1:-}" = "-y" ] || [ "${1:-}" = "--yolo" ]; then
-    YOLO=1
-    shift
+NET_MODE=""  # empty = not explicitly set
+
+while [[ "${1:-}" == -* ]]; do
+    case "$1" in
+        -y|--yolo)
+            YOLO=1
+            shift
+            ;;
+        --net)
+            NET_MODE="${2:-gate}"
+            shift 2
+            ;;
+        --net=*)
+            NET_MODE="${1#--net=}"
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+    esac
+done
+
+# Default NET_MODE: gate when yolo, open otherwise
+if [ -z "$NET_MODE" ]; then
+    if [ "$YOLO" -eq 1 ]; then
+        NET_MODE="gate"
+    else
+        NET_MODE="open"
+    fi
 fi
 
+case "$NET_MODE" in
+    open|gate|off) ;;
+    *) echo "Invalid --net mode: $NET_MODE (use open, gate, or off)" >&2; exit 1 ;;
+esac
+
 if [ $# -lt 1 ]; then
-    echo "Usage: ccage [-y|--yolo] /path/to/repo [claude-args...]"
+    echo "Usage: ccage [-y|--yolo] [--net open|gate|off] /path/to/repo [claude-args...]"
     echo ""
     echo "Options:"
-    echo "  -y, --yolo    Skip all permission prompts (dangerously-skip-permissions)"
+    echo "  -y, --yolo         Skip all permission prompts (dangerously-skip-permissions)"
+    echo "  --net open         Full network access (default without --yolo)"
+    echo "  --net gate         Domain-gated network via proxy (default with --yolo)"
+    echo "  --net off          No network access at all"
     echo ""
     echo "Examples:"
     echo "  ccage ~/projects/myapp"
     echo "  ccage -y ~/projects/myapp"
+    echo "  ccage --net gate ~/projects/myapp"
     echo "  ccage ~/projects/myapp --resume"
     echo "  ccage ~/projects/myapp -p 'explain this codebase'"
     exit 1
@@ -45,29 +89,108 @@ if [ "$YOLO" -eq 1 ]; then
     YOLO_LABEL=" [YOLO]"
 fi
 
-echo "=== Claude Code Container${YOLO_LABEL} ==="
+NET_LABEL=""
+case "$NET_MODE" in
+    gate) NET_LABEL=" [NET:GATED]" ;;
+    off)  NET_LABEL=" [NET:OFF]" ;;
+esac
+
+# --- Netgate proxy lifecycle ---
+
+PROXY_PID=""
+
+cleanup_proxy() {
+    if [ -n "$PROXY_PID" ] && kill -0 "$PROXY_PID" 2>/dev/null; then
+        kill "$PROXY_PID" 2>/dev/null
+        wait "$PROXY_PID" 2>/dev/null || true
+    fi
+    rm -f "${PROXY_LOG:-}"
+}
+
+PROXY_ARGS=()
+
+if [ "$NET_MODE" = "gate" ]; then
+    PROXY_OUTPUT=$(mktemp)
+    PROXY_LOG=$(mktemp)
+    python3 "$SCRIPT_DIR/netgate-proxy.py" \
+        --project-hash "$REPO_HASH" \
+        --container-name "$CONTAINER_NAME" \
+        > "$PROXY_OUTPUT" 2>"$PROXY_LOG" &
+    PROXY_PID=$!
+
+    # Wait for proxy to be ready (up to 3 seconds)
+    for _ in $(seq 1 30); do
+        if grep -q "^READY" "$PROXY_OUTPUT" 2>/dev/null; then break; fi
+        # Check if proxy already exited
+        if ! kill -0 "$PROXY_PID" 2>/dev/null; then break; fi
+        sleep 0.1
+    done
+
+    if ! grep -q "^READY" "$PROXY_OUTPUT" 2>/dev/null; then
+        echo "ERROR: netgate proxy failed to start" >&2
+        cat "$PROXY_LOG" >&2
+        cleanup_proxy
+        rm -f "$PROXY_OUTPUT" "$PROXY_LOG"
+        exit 1
+    fi
+
+    PROXY_PORT=$(grep "^PORT=" "$PROXY_OUTPUT" | head -1 | cut -d= -f2)
+    rm -f "$PROXY_OUTPUT"
+
+    PROXY_URL="http://host.docker.internal:${PROXY_PORT}"
+    NET_LABEL=" [NET:GATED :${PROXY_PORT}]"
+
+    PROXY_ARGS=(
+        --add-host host.docker.internal:host-gateway
+        -e "HTTP_PROXY=${PROXY_URL}"
+        -e "HTTPS_PROXY=${PROXY_URL}"
+        -e "http_proxy=${PROXY_URL}"
+        -e "https_proxy=${PROXY_URL}"
+        -e "NO_PROXY=localhost,127.0.0.1"
+        -e "no_proxy=localhost,127.0.0.1"
+    )
+
+    trap cleanup_proxy EXIT
+fi
+
+if [ "$NET_MODE" = "off" ]; then
+    PROXY_ARGS=(--network none)
+fi
+
+echo "=== Claude Code Container${YOLO_LABEL}${NET_LABEL} ==="
 echo "  Repo:      $REPO_PATH"
 echo "  Container: $CONTAINER_NAME"
 echo "  Volume:    $VOLUME_NAME"
 echo "=============================="
 
-exec docker run \
-    --rm \
-    -it \
-    --name "$CONTAINER_NAME" \
-    --hostname "$CONTAINER_NAME" \
-    --security-opt no-new-privileges:true \
-    --cap-drop ALL \
-    --tmpfs /tmp \
-    --tmpfs /run \
-    -e "CLAUDE_CODE_USE_BEDROCK=1" \
-    -e "AWS_PROFILE=${AWS_PROFILE:-claude-full}" \
-    -e "AWS_REGION=${AWS_REGION:-eu-central-1}" \
-    -e "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1" \
-    -v "$REPO_PATH:/workspace" \
-    -v "$VOLUME_NAME:/home/claude/.claude" \
-    -v "$HOST_CLAUDE_DIR:/host-claude:ro" \
-    -v "$AWS_CREDS:/home/claude/.aws/credentials:ro" \
-    "$IMAGE" \
-    $([ "$YOLO" -eq 1 ] && echo "--dangerously-skip-permissions") \
-    "$@"
+DOCKER_ARGS=(
+    --rm
+    -it
+    --name "$CONTAINER_NAME"
+    --hostname "$CONTAINER_NAME"
+    --security-opt no-new-privileges:true
+    --cap-drop ALL
+    --tmpfs /tmp
+    --tmpfs /run
+    -e "CLAUDE_CODE_USE_BEDROCK=1"
+    -e "AWS_PROFILE=${AWS_PROFILE:-claude-full}"
+    -e "AWS_REGION=${AWS_REGION:-eu-central-1}"
+    -e "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1"
+    -v "$REPO_PATH:/workspace"
+    -v "$VOLUME_NAME:/home/claude/.claude"
+    -v "$HOST_CLAUDE_DIR:/host-claude:ro"
+    -v "$AWS_CREDS:/home/claude/.aws/credentials:ro"
+    "${PROXY_ARGS[@]}"
+)
+
+CLAUDE_ARGS=()
+if [ "$YOLO" -eq 1 ]; then
+    CLAUDE_ARGS+=(--dangerously-skip-permissions)
+fi
+
+if [ "$NET_MODE" = "gate" ]; then
+    # Cannot use exec: need cleanup_proxy to run via trap EXIT
+    docker run "${DOCKER_ARGS[@]}" "$IMAGE" "${CLAUDE_ARGS[@]}" "$@"
+else
+    exec docker run "${DOCKER_ARGS[@]}" "$IMAGE" "${CLAUDE_ARGS[@]}" "$@"
+fi

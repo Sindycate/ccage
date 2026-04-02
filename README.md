@@ -41,7 +41,14 @@ ln -sf ~/claude-container/ccage ~/.local/bin/ccage
 ccage ~/projects/myapp
 
 # Yolo mode — skip all permission prompts (safe because containerized)
+# Automatically enables domain-gated networking
 ccage -y ~/projects/myapp
+
+# Explicit network gating (prompts for each new domain)
+ccage --net gate ~/projects/myapp
+
+# No network at all
+ccage --net off ~/projects/myapp
 
 # Pass any claude args through
 ccage ~/projects/myapp --resume
@@ -87,8 +94,28 @@ docker volume ls --filter "name=claude-state-"
 docker volume rm claude-state-<name>
 ```
 
+## Network gating
+
+With `--net gate`, all outbound HTTP/HTTPS from the container routes through a host-side proxy that prompts you before allowing access to new domains.
+
+**How it works:**
+1. A Python proxy starts on the host and binds to a random port
+2. The container gets `HTTP_PROXY`/`HTTPS_PROXY` env vars pointing to it
+3. When Claude Code (or any tool) tries to reach a new domain, a macOS dialog pops up
+4. You choose: **Allow (project)**, **Allow (always)**, or **Deny**
+5. The connection is held open during the prompt — no failed first request
+
+**Pre-allowed domains:** AWS infrastructure (`*.amazonaws.com`, `*.amazontrust.com`, `*.cloudfront.net`) is always allowed since Claude Code needs Bedrock API access.
+
+**Allowlist storage:**
+- Global (all projects): `~/.claude/netgate/global.json`
+- Per-project: `~/.claude/netgate/project-{hash}.json`
+- Manually edit these files to add/remove domains
+
+**Yolo + gating:** `ccage -y` defaults to `--net gate`. Override with `ccage -y --net open` if you want full network access.
+
 ## Limitations
 
-- macOS-only (`md5 -q` in the launcher script — use `md5sum | cut -c1-8` on Linux)
-- Network is open (Claude Code needs Bedrock API access) — no outbound firewall
+- macOS-only (`md5 -q` in the launcher, `osascript` for network gate dialogs)
+- Network gating only covers HTTP/HTTPS via proxy env vars — raw TCP, SSH, and DNS bypass the proxy
 - The mounted repo is still fully writable — but it's git-tracked, so worst case you `git checkout .`

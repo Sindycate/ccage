@@ -1,0 +1,7 @@
+{
+  "domains": [
+    "*.amazonaws.com",
+    "*.amazontrust.com",
+    "*.cloudfront.net"
+  ]
+}
