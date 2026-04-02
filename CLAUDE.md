@@ -21,6 +21,9 @@ ccage ~/path/to/repo
 # Pass args through to claude
 ccage ~/path/to/repo --resume
 ccage ~/path/to/repo -p "do something"
+
+# Yolo mode — skip all permission prompts (safe because containerized)
+ccage -y ~/path/to/repo
 ```
 
 ## Architecture
