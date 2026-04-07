@@ -17,7 +17,7 @@ if [ -d /host-codex ]; then
     for f in /host-codex/*; do
         [ -e "$f" ] || continue
         name="$(basename "$f")"
-        [ "$name" = "auth.json" ] && continue
+        [ "${CODEX_COPY_AUTH:-1}" = "0" ] && [ "$name" = "auth.json" ] && continue
         cp -rf "$f" "$CODEX_DIR/"
     done
     # Also copy dotfiles

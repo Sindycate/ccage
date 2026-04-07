@@ -88,7 +88,7 @@ shift
 
 # Load config: global first, then per-project override
 GIT_USER_NAME="" GIT_USER_EMAIL="" SSH_KEY="" SSH_HOST="" CAGE_DEFAULT=""
-CLAUDE_AUTH="" AWS_PROFILE="" AWS_REGION="" EXTRA_ENV=""
+CLAUDE_AUTH="" AWS_PROFILE="" AWS_REGION="" EXTRA_ENV="" CODEX_COPY_AUTH=""
 [ -f "$CAGE_CONFIG_DIR/cage.conf" ] && source "$CAGE_CONFIG_DIR/cage.conf"
 [ -f "$REPO_PATH/.cage.conf" ]      && source "$REPO_PATH/.cage.conf"
 
@@ -264,6 +264,9 @@ case "$CAGE_TOOL" in
         fi
         if [ -n "${OPENAI_API_KEY:-}" ]; then
             DOCKER_ARGS+=(-e "OPENAI_API_KEY=$OPENAI_API_KEY")
+        fi
+        if [ "${CODEX_COPY_AUTH:-1}" = "0" ]; then
+            DOCKER_ARGS+=(-e "CODEX_COPY_AUTH=0")
         fi
         ;;
 esac

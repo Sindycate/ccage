@@ -67,7 +67,9 @@ cage --net off ~/path/to/repo
 - Writes `~/.ssh/config` with SSH host alias if `SSH_HOST` is set
 
 **`entrypoint-codex.sh`** (runs inside Codex container on every start):
-- Copies auth/config files from `/host-codex` (read-only mount of `~/.codex`) into writable volume
+- Copies config/state files from `/host-codex` (read-only mount of `~/.codex`) into writable volume
+- Skips `auth.json` when `CODEX_COPY_AUTH=0` (for non-OpenAI providers like zllm)
+- Preserves `/workspace` trust across restarts (saves and restores `[projects]` entries in `config.toml`)
 - Sets `git safe.directory`, git identity, SSH config (same as Claude entrypoint)
 - Execs `codex` instead of `claude`
 
@@ -92,7 +94,7 @@ cage --net off ~/path/to/repo
 - Host `~/.claude` is mounted **read-only** — entrypoint must copy/symlink, never write back
 - `~/.claude.json` lives at `$HOME/.claude.json` (outside `$HOME/.claude/`), so the entrypoint symlinks it into the volume
 - Claude auth is configured via `CLAUDE_AUTH` in `cage.conf`: `bedrock` (mounts `~/.aws/credentials`) or `api-key` (passes `ANTHROPIC_API_KEY` env var)
-- Codex auth uses `~/.codex/` directory (sign in on host first) or `OPENAI_API_KEY` env var
+- Codex auth uses `~/.codex/` directory (sign in on host first) or `OPENAI_API_KEY` env var. Set `CODEX_COPY_AUTH=0` in `cage.conf` to skip copying `auth.json` (for non-OpenAI providers like zllm)
 - The `md5 -q` command in cage is macOS-only; use `md5sum | cut -c1-8` for Linux
 - Network gating (`--net gate`) only covers HTTP/HTTPS traffic routed via proxy env vars. Raw TCP/SSH/DNS bypass the proxy (including `git push` over SSH)
 - Git push requires `cage.conf` with `SSH_KEY` pointing to an unencrypted private key (passphrase-protected keys need ssh-agent, which is not available in the container)
