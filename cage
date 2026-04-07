@@ -206,9 +206,7 @@ if [ -n "$SSH_HOST" ]; then
     DOCKER_ARGS+=(-e "SSH_HOST=$SSH_HOST")
 fi
 
-DOCKER_ARGS+=(
-    "${PROXY_ARGS[@]}"
-)
+[[ ${#PROXY_ARGS[@]} -gt 0 ]] && DOCKER_ARGS+=("${PROXY_ARGS[@]}")
 
 CLAUDE_ARGS=()
 if [ "$YOLO" -eq 1 ]; then
@@ -217,7 +215,7 @@ fi
 
 if [ "$NET_MODE" = "gate" ]; then
     # Cannot use exec: need cleanup_proxy to run via trap EXIT
-    docker run "${DOCKER_ARGS[@]}" "$IMAGE" "${CLAUDE_ARGS[@]}" "$@"
+    docker run "${DOCKER_ARGS[@]}" "$IMAGE" ${CLAUDE_ARGS[@]+"${CLAUDE_ARGS[@]}"} "$@"
 else
-    exec docker run "${DOCKER_ARGS[@]}" "$IMAGE" "${CLAUDE_ARGS[@]}" "$@"
+    exec docker run "${DOCKER_ARGS[@]}" "$IMAGE" ${CLAUDE_ARGS[@]+"${CLAUDE_ARGS[@]}"} "$@"
 fi
