@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -s /bin/bash claude && \
-    mkdir -p /home/claude/.local/bin /home/claude/.claude && \
+    mkdir -p /home/claude/.local/bin /home/claude/.claude /home/claude/.ssh && \
+    chmod 700 /home/claude/.ssh && \
     chown -R claude:claude /home/claude
 
 COPY entrypoint.sh /home/claude/entrypoint.sh

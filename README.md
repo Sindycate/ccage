@@ -69,10 +69,38 @@ ccage ~/repo-b   # terminal 2
 | `~/.aws/credentials` | `/home/claude/.aws/credentials` | read-only |
 | `~/.claude` | `/host-claude` | read-only |
 | Docker volume (per-repo) | `/home/claude/.claude` | read-write |
+| SSH key (from `ccage.conf`) | `/home/claude/.ssh/id` | read-only |
+| `~/.ssh/known_hosts` | `/home/claude/.ssh/known_hosts` | read-only |
 
 Everything else — your home directory, OS config, other repos — is not accessible to the container.
 
 On each start, `entrypoint.sh` copies your host `settings.json` into the container's writable volume and symlinks `CLAUDE.md` and `agents/` if present. This means changes to your host Claude settings propagate automatically.
+
+## Git commit & push
+
+To enable git commit and push inside the container, create a config file:
+
+```bash
+# ~/.claude/ccage.conf (global defaults)
+GIT_USER_NAME="Your Name"
+GIT_USER_EMAIL="you@example.com"
+SSH_KEY="~/.ssh/id_ed25519"
+SSH_HOST="github-alias=github.com"   # optional: resolve SSH host aliases
+```
+
+Per-project overrides: place a `.ccage.conf` in the repo root (same format). Values override the global config.
+
+```bash
+# ~/my-repo/.ccage.conf (per-project)
+GIT_USER_NAME="DifferentName"
+GIT_USER_EMAIL="other@example.com"
+SSH_KEY="~/.ssh/other_key"
+```
+
+**Limitations:**
+- SSH keys must be unencrypted (no passphrase) — ssh-agent is not available in the container
+- Git push over SSH bypasses `--net gate` (raw TCP, not HTTP)
+- With `--net off`, push is blocked entirely (no network)
 
 ## Updating Claude Code
 

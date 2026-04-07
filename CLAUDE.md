@@ -37,11 +37,14 @@ ccage --net off ~/path/to/repo
 
 **`ccage`** (host-side launcher, symlinked to `~/.local/bin/`):
 - Takes a repo path, derives a unique container name + Docker volume via md5 hash of the full path
-- Runs `docker run` with security hardening (cap_drop ALL, no-new-privileges) and four mounts:
+- Loads git/SSH config from `~/.claude/ccage.conf` (global) then `<repo>/.ccage.conf` (per-project override)
+- Runs `docker run` with security hardening (cap_drop ALL, no-new-privileges) and mounts:
   - Repo at `/workspace` (read-write) — the only writable host path
   - `~/.aws/credentials` read-only for Bedrock auth
   - `~/.claude` read-only at `/host-claude` for settings reuse
   - Per-repo named Docker volume at `/home/claude/.claude` for persistent state
+  - SSH key read-only at `/home/claude/.ssh/id` for git push (if `SSH_KEY` configured)
+  - `~/.ssh/known_hosts` read-only (if exists)
 - Uses `md5 -q` (macOS-specific) for hashing — not portable to Linux
 
 **`entrypoint.sh`** (runs inside container on every start):
@@ -49,6 +52,8 @@ ccage --net off ~/path/to/repo
 - Copies `settings.json` from host read-only mount into writable volume
 - Symlinks `CLAUDE.md` and `agents/` from host if present
 - Sets `git safe.directory` to handle UID mismatch between host and container
+- Sets `user.name`/`user.email` from env vars (passed from `ccage.conf`)
+- Writes `~/.ssh/config` with SSH host alias if `SSH_HOST` is set
 
 **`Dockerfile`**: Ubuntu 24.04, installs Claude Code via official installer, runs as non-root `claude` user. `jq` is required by the statusLine command in the host's `settings.json`.
 
@@ -70,6 +75,7 @@ ccage --net off ~/path/to/repo
 - `~/.claude.json` lives at `$HOME/.claude.json` (outside `$HOME/.claude/`), so the entrypoint symlinks it into the volume
 - AWS auth uses long-lived credentials in `~/.aws/credentials` under the `claude-full` profile, via `zalando-aws-cli` on the host
 - The `md5 -q` command in ccage is macOS-only; use `md5sum | cut -c1-8` for Linux
-- Network gating (`--net gate`) only covers HTTP/HTTPS traffic routed via proxy env vars. Raw TCP/SSH/DNS bypass the proxy.
+- Network gating (`--net gate`) only covers HTTP/HTTPS traffic routed via proxy env vars. Raw TCP/SSH/DNS bypass the proxy (including `git push` over SSH)
+- Git push requires `ccage.conf` with `SSH_KEY` pointing to an unencrypted private key (passphrase-protected keys need ssh-agent, which is not available in the container)
 - Allowlists: global at `~/.claude/netgate/global.json`, per-project at `~/.claude/netgate/project-{hash}.json`
 - When `--net gate` is active, ccage does NOT use `exec docker run` (needs shell alive for proxy cleanup)
