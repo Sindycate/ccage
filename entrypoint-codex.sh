@@ -4,10 +4,34 @@ set -euo pipefail
 CODEX_DIR="$HOME/.codex"
 mkdir -p "$CODEX_DIR"
 
-# Copy host Codex config (read-only mount → writable volume)
-# Only copy config.toml — avoid overwriting state DB and session data
-if [ -f /host-codex/config.toml ]; then
-    cp -f /host-codex/config.toml "$CODEX_DIR/config.toml"
+# Check if /workspace was already trusted (from a previous run)
+WAS_TRUSTED=0
+if [ -f "$CODEX_DIR/config.toml" ] && grep -q 'projects\."/workspace"' "$CODEX_DIR/config.toml" 2>/dev/null; then
+    WAS_TRUSTED=1
+fi
+
+# Copy host Codex config into writable volume
+# Skip auth.json — it holds provider-specific OAuth tokens that may be expired
+# or irrelevant when using alternative providers (e.g. zllm instead of OpenAI)
+if [ -d /host-codex ]; then
+    for f in /host-codex/*; do
+        [ -e "$f" ] || continue
+        name="$(basename "$f")"
+        [ "$name" = "auth.json" ] && continue
+        cp -rf "$f" "$CODEX_DIR/"
+    done
+    # Also copy dotfiles
+    for f in /host-codex/.*; do
+        [ -e "$f" ] || continue
+        name="$(basename "$f")"
+        [ "$name" = "." ] || [ "$name" = ".." ] && continue
+        cp -rf "$f" "$CODEX_DIR/"
+    done
+fi
+
+# Restore /workspace trust if it was previously granted but lost by the copy
+if [ "$WAS_TRUSTED" -eq 1 ] && ! grep -q 'projects\."/workspace"' "$CODEX_DIR/config.toml" 2>/dev/null; then
+    printf '\n[projects."/workspace"]\ntrust_level = "trusted"\n' >> "$CODEX_DIR/config.toml"
 fi
 
 # Prevent git "dubious ownership" errors from UID mismatch
