@@ -20,7 +20,7 @@ ln -sfn "$PREFS_STORE" "$HOME/.claude.json"
 # Prevent git "dubious ownership" errors from UID mismatch
 git config --global --add safe.directory /workspace
 
-# Git identity (from ccage.conf via env vars)
+# Git identity (from cage.conf via env vars)
 [ -n "${GIT_USER_NAME:-}" ]  && git config --global user.name "$GIT_USER_NAME"
 [ -n "${GIT_USER_EMAIL:-}" ] && git config --global user.email "$GIT_USER_EMAIL"
 

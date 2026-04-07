@@ -1,4 +1,4 @@
-# ccage
+# cage
 
 Run [Claude Code](https://docs.anthropic.com/en/docs/claude-code) in a Docker container so it can only touch the repo you point it at — nothing else on your machine.
 
@@ -27,41 +27,41 @@ colima start --cpu 4 --memory 8 --disk 100
 ## Install
 
 ```bash
-git clone git@github.com:Sindycate/ccage.git ~/claude-container
-cd ~/claude-container
+git clone git@github.com:Sindycate/cage.git ~/cage
+cd ~/cage
 docker compose build
-chmod +x ccage
-ln -sf ~/claude-container/ccage ~/.local/bin/ccage
+chmod +x cage
+ln -sf ~/cage/cage ~/.local/bin/cage
 ```
 
 ## Usage
 
 ```bash
 # Run Claude Code against a repo
-ccage ~/projects/myapp
+cage ~/projects/myapp
 
 # Yolo mode — skip all permission prompts (safe because containerized)
 # Automatically enables domain-gated networking
-ccage -y ~/projects/myapp
+cage -y ~/projects/myapp
 
 # Explicit network gating (prompts for each new domain)
-ccage --net gate ~/projects/myapp
+cage --net gate ~/projects/myapp
 
 # No network at all
-ccage --net off ~/projects/myapp
+cage --net off ~/projects/myapp
 
 # Pass any claude args through
-ccage ~/projects/myapp --resume
-ccage ~/projects/myapp -p "fix the failing tests"
+cage ~/projects/myapp --resume
+cage ~/projects/myapp -p "fix the failing tests"
 
 # Multiple repos in parallel (separate terminals)
-ccage ~/repo-a   # terminal 1
-ccage ~/repo-b   # terminal 2
+cage ~/repo-a   # terminal 1
+cage ~/repo-b   # terminal 2
 ```
 
 ## How it works
 
-`ccage` is a small bash script that runs `docker run` with:
+`cage` is a small bash script that runs `docker run` with:
 
 | Mount | Path in container | Access |
 |-------|-------------------|--------|
@@ -69,7 +69,7 @@ ccage ~/repo-b   # terminal 2
 | `~/.aws/credentials` | `/home/claude/.aws/credentials` | read-only |
 | `~/.claude` | `/host-claude` | read-only |
 | Docker volume (per-repo) | `/home/claude/.claude` | read-write |
-| SSH key (from `ccage.conf`) | `/home/claude/.ssh/id` | read-only |
+| SSH key (from `cage.conf`) | `/home/claude/.ssh/id` | read-only |
 | `~/.ssh/known_hosts` | `/home/claude/.ssh/known_hosts` | read-only |
 
 Everything else — your home directory, OS config, other repos — is not accessible to the container.
@@ -81,17 +81,17 @@ On each start, `entrypoint.sh` copies your host `settings.json` into the contain
 To enable git commit and push inside the container, create a config file:
 
 ```bash
-# ~/.claude/ccage.conf (global defaults)
+# ~/.claude/cage.conf (global defaults)
 GIT_USER_NAME="Your Name"
 GIT_USER_EMAIL="you@example.com"
 SSH_KEY="~/.ssh/id_ed25519"
 SSH_HOST="github-alias=github.com"   # optional: resolve SSH host aliases
 ```
 
-Per-project overrides: place a `.ccage.conf` in the repo root (same format). Values override the global config.
+Per-project overrides: place a `.cage.conf` in the repo root (same format). Values override the global config.
 
 ```bash
-# ~/my-repo/.ccage.conf (per-project)
+# ~/my-repo/.cage.conf (per-project)
 GIT_USER_NAME="DifferentName"
 GIT_USER_EMAIL="other@example.com"
 SSH_KEY="~/.ssh/other_key"
@@ -105,7 +105,7 @@ SSH_KEY="~/.ssh/other_key"
 ## Updating Claude Code
 
 ```bash
-cd ~/claude-container
+cd ~/cage
 docker compose build --no-cache
 ```
 
@@ -140,7 +140,7 @@ With `--net gate`, all outbound HTTP/HTTPS from the container routes through a h
 - Per-project: `~/.claude/netgate/project-{hash}.json`
 - Manually edit these files to add/remove domains
 
-**Yolo + gating:** `ccage -y` defaults to `--net gate`. Override with `ccage -y --net open` if you want full network access.
+**Yolo + gating:** `cage -y` defaults to `--net gate`. Override with `cage -y --net open` if you want full network access.
 
 ## Limitations
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-netgate-proxy.py — Domain-gating forward proxy for ccage.
+netgate-proxy.py — Domain-gating forward proxy for cage.
 
 Runs on the macOS host. Container traffic routes through it via HTTP_PROXY/HTTPS_PROXY.
 For each unknown domain, shows a macOS dialog and holds the connection until the user decides.
@@ -335,8 +335,8 @@ def gate_domain(hostname: str) -> bool:
 # --- Main ---
 
 def main():
-    parser = argparse.ArgumentParser(description="Domain-gating forward proxy for ccage")
-    parser.add_argument("--project-hash", required=True, help="8-char repo hash from ccage")
+    parser = argparse.ArgumentParser(description="Domain-gating forward proxy for cage")
+    parser.add_argument("--project-hash", required=True, help="8-char repo hash from cage")
     parser.add_argument("--container-name", default="unknown", help="Container name for dialogs")
     parser.add_argument("--port", type=int, default=0, help="Port to bind (0 = auto)")
     parser.add_argument("--config-dir", default=os.path.expanduser("~/.claude/netgate"),
@@ -353,7 +353,7 @@ def main():
     server = ThreadingProxyServer(("0.0.0.0", args.port), NetgateHandler)
     actual_port = server.server_address[1]
 
-    # Startup protocol: ccage reads these lines from stdout
+    # Startup protocol: cage reads these lines from stdout
     print(f"PORT={actual_port}", flush=True)
     print("READY", flush=True)
 

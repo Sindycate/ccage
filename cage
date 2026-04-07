@@ -53,7 +53,7 @@ case "$NET_MODE" in
 esac
 
 if [ $# -lt 1 ]; then
-    echo "Usage: ccage [-y|--yolo] [--net open|gate|off] /path/to/repo [claude-args...]"
+    echo "Usage: cage [-y|--yolo] [--net open|gate|off] /path/to/repo [claude-args...]"
     echo ""
     echo "Options:"
     echo "  -y, --yolo         Skip all permission prompts (dangerously-skip-permissions)"
@@ -62,11 +62,11 @@ if [ $# -lt 1 ]; then
     echo "  --net off          No network access at all"
     echo ""
     echo "Examples:"
-    echo "  ccage ~/projects/myapp"
-    echo "  ccage -y ~/projects/myapp"
-    echo "  ccage --net gate ~/projects/myapp"
-    echo "  ccage ~/projects/myapp --resume"
-    echo "  ccage ~/projects/myapp -p 'explain this codebase'"
+    echo "  cage ~/projects/myapp"
+    echo "  cage -y ~/projects/myapp"
+    echo "  cage --net gate ~/projects/myapp"
+    echo "  cage ~/projects/myapp --resume"
+    echo "  cage ~/projects/myapp -p 'explain this codebase'"
     exit 1
 fi
 
@@ -75,8 +75,8 @@ shift
 
 # Load git/SSH config: global first, then per-project override
 GIT_USER_NAME="" GIT_USER_EMAIL="" SSH_KEY="" SSH_HOST=""
-[ -f "$HOST_CLAUDE_DIR/ccage.conf" ] && source "$HOST_CLAUDE_DIR/ccage.conf"
-[ -f "$REPO_PATH/.ccage.conf" ]      && source "$REPO_PATH/.ccage.conf"
+[ -f "$HOST_CLAUDE_DIR/cage.conf" ] && source "$HOST_CLAUDE_DIR/cage.conf"
+[ -f "$REPO_PATH/.cage.conf" ]      && source "$REPO_PATH/.cage.conf"
 
 REPO_BASENAME="$(basename "$REPO_PATH")"
 REPO_HASH="$(echo -n "$REPO_PATH" | md5 -q | cut -c1-8)"
@@ -187,7 +187,7 @@ DOCKER_ARGS=(
     -v "$AWS_CREDS:/home/claude/.aws/credentials:ro"
 )
 
-# Git/SSH mounts and env vars (from ccage.conf)
+# Git/SSH mounts and env vars (from cage.conf)
 if [ -n "$GIT_USER_NAME" ]; then
     DOCKER_ARGS+=(-e "GIT_USER_NAME=$GIT_USER_NAME")
 fi
