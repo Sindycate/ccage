@@ -33,5 +33,5 @@ ENV HOME=/home/codex
 ENV PATH=/home/codex/.local/bin:$PATH
 ENV HISTFILE=/dev/null
 
-WORKDIR /workspace
+WORKDIR /home/codex
 ENTRYPOINT ["/home/codex/entrypoint.sh"]

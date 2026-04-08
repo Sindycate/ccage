@@ -49,7 +49,7 @@ cage --net off ~/path/to/repo
 - Takes a repo path, derives a unique container name + Docker volume via md5 hash of the full path
 - Loads config from `~/.config/cage/cage.conf` (global) then `<repo>/.cage.conf` (per-project override)
 - Runs `docker run` with security hardening (cap_drop ALL, no-new-privileges) and tool-specific mounts:
-  - Repo at `/workspace` (read-write) — the only writable host path
+  - Repo at `/workspace/{reponame}` (read-write) — the only writable host path; unique path gives each project its own identity in Claude Code
   - **Claude (bedrock auth):** `~/.aws/credentials` read-only, `~/.claude` read-only at `/host-claude`
   - **Claude (api-key auth):** `ANTHROPIC_API_KEY` env var, `~/.claude` read-only at `/host-claude`
   - **Codex:** `~/.codex` read-only at `/host-codex` for auth, `OPENAI_API_KEY` env var if set
@@ -69,7 +69,7 @@ cage --net off ~/path/to/repo
 **`entrypoint-codex.sh`** (runs inside Codex container on every start):
 - Copies config/state files from `/host-codex` (read-only mount of `~/.codex`) into writable volume
 - Skips `auth.json` when `CODEX_COPY_AUTH=0` (for non-OpenAI providers like Azure OpenAI)
-- Preserves `/workspace` trust across restarts (saves and restores `[projects]` entries in `config.toml`)
+- Preserves workspace trust across restarts (saves and restores `[projects]` entries in `config.toml`)
 - Sets `git safe.directory`, git identity, SSH config (same as Claude entrypoint)
 - Execs `codex` instead of `claude`
 

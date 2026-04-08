@@ -4,9 +4,12 @@ set -euo pipefail
 CODEX_DIR="$HOME/.codex"
 mkdir -p "$CODEX_DIR"
 
-# Check if /workspace was already trusted (from a previous run)
+# Use WORKSPACE_DIR so each project gets a unique identity
+WORK_DIR="${WORKSPACE_DIR:-/workspace}"
+
+# Check if workspace was already trusted (from a previous run)
 WAS_TRUSTED=0
-if [ -f "$CODEX_DIR/config.toml" ] && grep -q 'projects\."/workspace"' "$CODEX_DIR/config.toml" 2>/dev/null; then
+if [ -f "$CODEX_DIR/config.toml" ] && grep -q "projects\\.\"${WORK_DIR}\"" "$CODEX_DIR/config.toml" 2>/dev/null; then
     WAS_TRUSTED=1
 fi
 
@@ -29,13 +32,13 @@ if [ -d /host-codex ]; then
     done
 fi
 
-# Restore /workspace trust if it was previously granted but lost by the copy
-if [ "$WAS_TRUSTED" -eq 1 ] && ! grep -q 'projects\."/workspace"' "$CODEX_DIR/config.toml" 2>/dev/null; then
-    printf '\n[projects."/workspace"]\ntrust_level = "trusted"\n' >> "$CODEX_DIR/config.toml"
+# Restore workspace trust if it was previously granted but lost by the copy
+if [ "$WAS_TRUSTED" -eq 1 ] && ! grep -q "projects\\.\"${WORK_DIR}\"" "$CODEX_DIR/config.toml" 2>/dev/null; then
+    printf '\n[projects."%s"]\ntrust_level = "trusted"\n' "$WORK_DIR" >> "$CODEX_DIR/config.toml"
 fi
 
 # Prevent git "dubious ownership" errors from UID mismatch
-git config --global --add safe.directory /workspace
+git config --global --add safe.directory "$WORK_DIR"
 
 # Git identity (from cage.conf via env vars)
 [ -n "${GIT_USER_NAME:-}" ]  && git config --global user.name "$GIT_USER_NAME"
@@ -52,5 +55,5 @@ if [ -d "$HOME/.ssh" ]; then
     fi
 fi
 
-cd /workspace
+cd "$WORK_DIR"
 exec codex "$@"

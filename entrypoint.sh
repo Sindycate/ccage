@@ -17,8 +17,11 @@ ln -sfn "$PREFS_STORE" "$HOME/.claude.json"
 [ -f /host-claude/CLAUDE.md ]  && ln -sfn /host-claude/CLAUDE.md "$CLAUDE_DIR/CLAUDE.md"
 [ -d /host-claude/agents ]     && ln -sfn /host-claude/agents "$CLAUDE_DIR/agents"
 
+# Use WORKSPACE_DIR so each project gets a unique identity in Claude Code
+WORK_DIR="${WORKSPACE_DIR:-/workspace}"
+
 # Prevent git "dubious ownership" errors from UID mismatch
-git config --global --add safe.directory /workspace
+git config --global --add safe.directory "$WORK_DIR"
 
 # Git identity (from cage.conf via env vars)
 [ -n "${GIT_USER_NAME:-}" ]  && git config --global user.name "$GIT_USER_NAME"
@@ -35,5 +38,5 @@ if [ -d "$HOME/.ssh" ]; then
     fi
 fi
 
-cd /workspace
+cd "$WORK_DIR"
 exec claude "$@"

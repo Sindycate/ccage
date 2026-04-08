@@ -27,5 +27,5 @@ ENV HISTFILE=/dev/null
 WORKDIR /tmp
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
-WORKDIR /workspace
+WORKDIR /home/claude
 ENTRYPOINT ["/home/claude/entrypoint.sh"]
