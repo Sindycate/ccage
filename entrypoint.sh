@@ -38,5 +38,12 @@ if [ -d "$HOME/.ssh" ]; then
     fi
 fi
 
+# GitHub CLI: copy host config if no token env var
+if [ -d /host-gh ] && [ -z "${GH_TOKEN:-}" ]; then
+    GH_CONFIG_DIR="${HOME}/.config/gh"
+    mkdir -p "$GH_CONFIG_DIR"
+    cp -rf /host-gh/* "$GH_CONFIG_DIR/" 2>/dev/null || true
+fi
+
 cd "$WORK_DIR"
 exec claude "$@"

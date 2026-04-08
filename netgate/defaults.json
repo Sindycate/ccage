@@ -3,6 +3,8 @@
     "*.amazonaws.com",
     "*.amazontrust.com",
     "*.cloudfront.net",
+    "*.github.com",
+    "*.githubusercontent.com",
     "*.openai.com",
     "*.oaiusercontent.com",
     "*.oaistatic.com"

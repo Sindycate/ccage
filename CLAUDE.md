@@ -53,6 +53,7 @@ cage --net off ~/path/to/repo
   - **Claude (bedrock auth):** `~/.aws/credentials` read-only, `~/.claude` read-only at `/host-claude`
   - **Claude (api-key auth):** `ANTHROPIC_API_KEY` env var, `~/.claude` read-only at `/host-claude`
   - **Codex:** `~/.codex` read-only at `/host-codex` for auth, `OPENAI_API_KEY` env var if set
+  - **GitHub CLI (both tools, opt-in via `GH_AUTH=1`):** `~/.config/gh` read-only at `/host-gh` (if exists), `GH_TOKEN`/`GITHUB_TOKEN` env var if set
   - Per-repo named Docker volume for persistent state
   - SSH key read-only for git push (if `SSH_KEY` configured)
   - `~/.ssh/known_hosts` read-only (if exists)
@@ -65,17 +66,19 @@ cage --net off ~/path/to/repo
 - Sets `git safe.directory` to handle UID mismatch between host and container
 - Sets `user.name`/`user.email` from env vars (passed from `cage.conf`)
 - Writes `~/.ssh/config` with SSH host alias if `SSH_HOST` is set
+- Copies GitHub CLI config from `/host-gh` into writable `~/.config/gh/` (skipped when `GH_TOKEN` is set)
 
 **`entrypoint-codex.sh`** (runs inside Codex container on every start):
 - Copies config/state files from `/host-codex` (read-only mount of `~/.codex`) into writable volume
 - Skips `auth.json` when `CODEX_COPY_AUTH=0` (for non-OpenAI providers like Azure OpenAI)
 - Preserves workspace trust across restarts (saves and restores `[projects]` entries in `config.toml`)
 - Sets `git safe.directory`, git identity, SSH config (same as Claude entrypoint)
+- Copies GitHub CLI config from `/host-gh` (same as Claude entrypoint)
 - Execs `codex` instead of `claude`
 
-**`Dockerfile`**: Ubuntu 24.04, installs Claude Code via official installer, runs as non-root `claude` user. `jq` is required by the statusLine command in the host's `settings.json`.
+**`Dockerfile`**: Ubuntu 24.04, installs GitHub CLI and Claude Code via official installer, runs as non-root `claude` user. `jq` is required by the statusLine command in the host's `settings.json`.
 
-**`Dockerfile.codex`**: Ubuntu 24.04 + Node.js LTS, installs Codex CLI via `npm install -g @openai/codex`, runs as non-root `codex` user.
+**`Dockerfile.codex`**: Ubuntu 24.04 + GitHub CLI + Node.js LTS, installs Codex CLI via `npm install -g @openai/codex`, runs as non-root `codex` user.
 
 **`docker-compose.yml`**: Build-only helper — tags images as `claude-code:latest` and `codex:latest`. Not used for running containers (that's `cage`'s job).
 
@@ -87,7 +90,7 @@ cage --net off ~/path/to/repo
 - Pre-allows AWS and OpenAI domains via `netgate/defaults.json`
 - Concurrent requests to the same unknown domain show only one dialog (deduplication via threading.Event)
 
-**`netgate/defaults.json`**: Pre-allowed domain patterns (AWS infrastructure, OpenAI API). Loaded on every proxy start.
+**`netgate/defaults.json`**: Pre-allowed domain patterns (AWS infrastructure, GitHub, OpenAI API). Loaded on every proxy start.
 
 **`Makefile`**: Install/uninstall targets. `make install` copies files to `~/.local/share/cage/` and symlinks to `~/.local/bin/cage`.
 
@@ -110,6 +113,7 @@ cage --net off ~/path/to/repo
 - `~/.claude.json` lives at `$HOME/.claude.json` (outside `$HOME/.claude/`), so the entrypoint symlinks it into the volume
 - Claude auth is configured via `CLAUDE_AUTH` in `cage.conf`: `bedrock` (mounts `~/.aws/credentials`) or `api-key` (passes `ANTHROPIC_API_KEY` env var)
 - Codex auth uses `~/.codex/` directory (sign in on host first) or `OPENAI_API_KEY` env var. Set `CODEX_COPY_AUTH=0` in `cage.conf` to skip copying `auth.json` (for non-OpenAI providers like Azure OpenAI)
+- GitHub CLI auth is **off by default**. Set `GH_AUTH=1` in `cage.conf` to enable. When enabled: `GH_TOKEN` or `GITHUB_TOKEN` env var is passed through, and `~/.config/gh/` is mounted read-only
 - Hashing uses `md5 -q` on macOS and `md5sum` on Linux (auto-detected in the cage script)
 - Network gating (`--net gate`) only covers HTTP/HTTPS traffic routed via proxy env vars. Raw TCP/SSH/DNS bypass the proxy (including `git push` over SSH)
 - Git push requires `cage.conf` with `SSH_KEY` pointing to a private key. Passphrase-protected keys work but will prompt each time (ssh-agent is not available in the container)
