@@ -12,7 +12,7 @@ fi
 
 # Copy host Codex config into writable volume
 # Skip auth.json — it holds provider-specific OAuth tokens that may be expired
-# or irrelevant when using alternative providers (e.g. zllm instead of OpenAI)
+# or irrelevant when using alternative providers (e.g. Azure OpenAI instead of OpenAI)
 if [ -d /host-codex ]; then
     for f in /host-codex/*; do
         [ -e "$f" ] || continue

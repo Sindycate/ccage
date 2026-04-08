@@ -84,7 +84,7 @@ mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 
 tar xzf "$TARBALL" -C "$INSTALL_DIR" --strip-components=1
 
-chmod +x "$INSTALL_DIR/cage" "$INSTALL_DIR/netgate-proxy.py"
+chmod +x "$INSTALL_DIR/cage" "$INSTALL_DIR/cage-setup.sh" "$INSTALL_DIR/netgate-proxy.py"
 ln -sf "$INSTALL_DIR/cage" "$BIN_DIR/cage"
 
 mkdir -p "$HOME/.config/cage"
@@ -106,7 +106,8 @@ fi
 
 echo ""
 info "Next steps:"
-info "  1. Start Docker (e.g., colima start --cpu 4 --memory 8 --disk 100)"
-info "  2. Run: cage ~/path/to/repo"
-info "  3. Docker images will be built automatically on first run."
+info "  1. Run: cage setup"
+info "  2. Start Docker (e.g., colima start --cpu 4 --memory 8 --disk 100)"
+info "  3. Run: cage ~/path/to/repo"
+info "  4. Docker images will be built automatically on first run."
 echo ""
