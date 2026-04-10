@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-CAGE_VERSION="0.7.2"
+CAGE_VERSION="0.7.3"
 
 HOST_CLAUDE_DIR="$HOME/.claude"
 CAGE_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/cage"
@@ -366,7 +366,7 @@ TOOL_ARGS=()
 if [ "$YOLO" -eq 1 ]; then
     case "$CAGE_TOOL" in
         claude) TOOL_ARGS+=(--dangerously-skip-permissions) ;;
-        codex)  TOOL_ARGS+=(--full-auto)
+        codex)  TOOL_ARGS+=(--yolo)
                 DOCKER_ARGS+=(-e "CAGE_YOLO=1") ;;
     esac
 fi
