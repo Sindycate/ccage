@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-CAGE_VERSION="0.7.0"
+CAGE_VERSION="0.7.1"
 
 HOST_CLAUDE_DIR="$HOME/.claude"
 CAGE_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/cage"
@@ -290,6 +290,10 @@ case "$CAGE_TOOL" in
         ;;
     codex)
         DOCKER_ARGS+=(
+            # Codex CLI uses bubblewrap to sandbox tool calls (apply_patch, rg, etc).
+            # bwrap needs user namespaces, which Ubuntu 24.04 AppArmor blocks by default.
+            # The container itself is the security boundary, so this is safe to relax.
+            --security-opt apparmor=unconfined
             -v "$VOLUME_NAME:${CONTAINER_HOME}/.codex"
         )
         if [ -d "$HOME/.codex" ]; then
@@ -361,7 +365,8 @@ TOOL_ARGS=()
 if [ "$YOLO" -eq 1 ]; then
     case "$CAGE_TOOL" in
         claude) TOOL_ARGS+=(--dangerously-skip-permissions) ;;
-        codex)  TOOL_ARGS+=(--full-auto) ;;
+        codex)  TOOL_ARGS+=(--full-auto)
+                DOCKER_ARGS+=(-e "CAGE_YOLO=1") ;;
     esac
 fi
 

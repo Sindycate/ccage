@@ -37,6 +37,14 @@ if [ "$WAS_TRUSTED" -eq 1 ] && ! grep -q "projects\\.\"${WORK_DIR}\"" "$CODEX_DI
     printf '\n[projects."%s"]\ntrust_level = "trusted"\n' "$WORK_DIR" >> "$CODEX_DIR/config.toml"
 fi
 
+# In YOLO mode, auto-trust the workspace so Codex doesn't prompt
+if [ "${CAGE_YOLO:-0}" = "1" ]; then
+    if ! grep -q "projects\\.\"${WORK_DIR}\"" "$CODEX_DIR/config.toml" 2>/dev/null; then
+        touch "$CODEX_DIR/config.toml"
+        printf '\n[projects."%s"]\ntrust_level = "trusted"\n' "$WORK_DIR" >> "$CODEX_DIR/config.toml"
+    fi
+fi
+
 # Prevent git "dubious ownership" errors from UID mismatch
 git config --global --add safe.directory "$WORK_DIR"
 
