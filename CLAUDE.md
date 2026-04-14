@@ -76,7 +76,7 @@ cage --net off ~/path/to/repo
 - Copies GitHub CLI config from `/host-gh` (same as Claude entrypoint)
 - Execs `codex` instead of `claude`
 
-**`Dockerfile`**: Ubuntu 24.04, installs GitHub CLI and Claude Code via official installer, runs as non-root `claude` user. `jq` is required by the statusLine command in the host's `settings.json`.
+**`Dockerfile`**: Ubuntu 24.04, installs GitHub CLI, bubblewrap (for subprocess isolation), and Claude Code via official installer, runs as non-root `claude` user. `jq` is required by the statusLine command in the host's `settings.json`.
 
 **`Dockerfile.codex`**: Ubuntu 24.04 + GitHub CLI + Node.js LTS, installs Codex CLI via `npm install -g @openai/codex`, runs as non-root `codex` user.
 
@@ -121,4 +121,4 @@ cage --net off ~/path/to/repo
 - Git push requires `cage.conf` with `SSH_KEY` pointing to a private key. Passphrase-protected keys work but will prompt each time (ssh-agent is not available in the container)
 - Allowlists: global at `~/.claude/netgate/global.json`, per-project at `~/.claude/netgate/project-{hash}.json`
 - When `--net gate` is active, cage does NOT use `exec docker run` (needs shell alive for proxy cleanup)
-- **Codex security:** Codex containers use `apparmor=unconfined` and `seccomp=unconfined` so bubblewrap can create user namespaces for tool sandboxing. `no-new-privileges` is also omitted for Codex. `--cap-drop ALL` still applies. Claude containers retain full lockdown (`no-new-privileges`, default seccomp + AppArmor)
+- **Container security:** Both Claude and Codex containers use `apparmor=unconfined` and `seccomp=unconfined` so bubblewrap can create user namespaces for subprocess isolation/sandboxing. `no-new-privileges` is omitted. `--cap-drop ALL` still applies. The container itself is the security boundary
