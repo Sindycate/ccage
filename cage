@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-CAGE_VERSION="0.7.6"
+CAGE_VERSION="0.7.7"
 
 HOST_CLAUDE_DIR="$HOME/.claude"
 CAGE_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/cage"
@@ -278,7 +278,6 @@ case "$CAGE_TOOL" in
                     -e "CLAUDE_CODE_USE_BEDROCK=1"
                     -e "AWS_PROFILE=${AWS_PROFILE:-}"
                     -e "AWS_REGION=${AWS_REGION:-}"
-                    -e "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1"
                     -v "$AWS_CREDS:${CONTAINER_HOME}/.aws/credentials:ro"
                 )
                 ;;
