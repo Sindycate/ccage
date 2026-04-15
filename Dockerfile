@@ -30,6 +30,9 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     apt-get update && apt-get install -y gh && \
     rm -rf /var/lib/apt/lists/*
 
+LABEL org.opencontainers.image.source=https://github.com/Sindycate/cage
+LABEL org.opencontainers.image.description="cage - Docker isolation for AI coding assistants"
+
 RUN useradd -m -s /bin/bash claude && \
     mkdir -p /home/claude/.local/bin /home/claude/.claude /home/claude/.ssh && \
     chown -R claude:claude /home/claude && \

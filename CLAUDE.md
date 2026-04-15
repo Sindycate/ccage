@@ -19,6 +19,9 @@ docker compose build codex
 # Rebuild from scratch (e.g., to update tool versions)
 docker compose build --no-cache
 
+# Force rebuild to get latest tool version (pulls fresh from upstream)
+cage --rebuild ~/path/to/repo
+
 # Run Claude Code against a repo (default)
 cage ~/path/to/repo
 cage claude ~/path/to/repo
@@ -46,6 +49,7 @@ cage --net off ~/path/to/repo
 
 **`cage`** (host-side launcher, symlinked to `~/.local/bin/`):
 - Accepts optional subcommand (`cage claude` or `cage codex`) to select tool; defaults to `claude` (overridable via `CAGE_DEFAULT` in `cage.conf`)
+- Acquires Docker images via pull-before-build: tries `docker pull` from `CAGE_REGISTRY` (ghcr.io), falls back to local `docker build` if pull fails. `--rebuild` forces a local build with `--no-cache` (useful for getting the latest tool version)
 - Takes a repo path, derives a unique container name + Docker volume via md5 hash of the full path
 - Loads config in layers: `~/.config/cage/cage.conf` (global) → `profiles/<name>.conf` (named profile) → `<repo>/.cage.conf` (per-project override)
 - Runs `docker run` with security hardening (cap_drop ALL, no-new-privileges) and tool-specific mounts:
@@ -100,15 +104,16 @@ cage --net off ~/path/to/repo
 
 **`install.sh`**: Curl-pipe-bash installer. Downloads the latest GitHub Release tarball, verifies checksum, extracts to `~/.local/share/cage/`, and symlinks the binary. Also supports `--uninstall`.
 
-**`.github/workflows/release.yml`**: Creates a GitHub Release with tarball and SHA-256 checksum when a `v*` tag is pushed. Verifies that the tag matches `CAGE_VERSION` in the cage script.
+**`.github/workflows/release.yml`**: Creates a GitHub Release with tarball and SHA-256 checksum when a `v*` tag is pushed. Also builds and pushes multi-arch (amd64/arm64) Docker images to `ghcr.io/sindycate/cage/` via `docker/build-push-action`. Verifies that the tag matches `CAGE_VERSION` in the cage script.
 
 ## Versioning & Release Flow
 
 - Version is defined in `CAGE_VERSION` at the top of the `cage` script (e.g., `CAGE_VERSION="0.1.0"`)
 - `cage --version` prints the current version
 - Git tags use `v` prefix: `v0.1.0`, `v0.2.0`, etc.
-- Docker images are tagged with the version (`claude-code:0.1.0`) plus `:latest`
-- Upgrading cage triggers automatic Docker image rebuilds (the new versioned tag doesn't exist yet)
+- Docker images are tagged with the version (`claude-code:0.1.0`) plus `:latest`, and published to `ghcr.io/sindycate/cage/` as multi-arch (amd64/arm64)
+- On first run, cage pulls the pre-built image from ghcr.io; falls back to local build if pull fails
+- `--rebuild` forces a local `docker build --no-cache` to get the latest tool version
 - Releases are automated via GitHub Actions on tag push
 - **Release flow:** bump `CAGE_VERSION` → commit → push → `git tag v{version}` → `git push origin v{version}`. Never skip tagging — releases only trigger on `v*` tag push
 - **Every pushed commit gets its own version.** Never push multiple commits under the same version — if a follow-up fix is needed, bump again

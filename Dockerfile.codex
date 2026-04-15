@@ -30,6 +30,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
+LABEL org.opencontainers.image.source=https://github.com/Sindycate/cage
+LABEL org.opencontainers.image.description="cage - Docker isolation for AI coding assistants"
+
 # Create user before installing Codex so npm global prefix is user-writable
 # (allows Codex's built-in self-update to work without root)
 RUN useradd -m -s /bin/bash codex && \

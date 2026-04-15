@@ -2,19 +2,20 @@ PREFIX  ?= $(HOME)/.local
 BINDIR  ?= $(PREFIX)/bin
 LIBDIR  ?= $(PREFIX)/share/cage
 
-VERSION := $(shell grep '^CAGE_VERSION=' cage | cut -d'"' -f2)
+VERSION  := $(shell grep '^CAGE_VERSION=' cage | cut -d'"' -f2)
+REGISTRY := ghcr.io/sindycate/cage
 
-DIST_FILES = cage cage-setup.sh netgate-proxy.py docker-compose.yml \
+DIST_FILES = cage cage-setup.sh cage-profiles.sh netgate-proxy.py docker-compose.yml \
              Dockerfile Dockerfile.codex \
              entrypoint.sh entrypoint-codex.sh
 
-.PHONY: install uninstall build rebuild version
+.PHONY: install uninstall build rebuild pull version
 
 install:
 	mkdir -p $(LIBDIR) $(BINDIR)
 	cp $(DIST_FILES) $(LIBDIR)/
 	cp -r netgate $(LIBDIR)/
-	chmod +x $(LIBDIR)/cage $(LIBDIR)/cage-setup.sh $(LIBDIR)/netgate-proxy.py
+	chmod +x $(LIBDIR)/cage $(LIBDIR)/cage-setup.sh $(LIBDIR)/cage-profiles.sh $(LIBDIR)/netgate-proxy.py
 	ln -sf $(LIBDIR)/cage $(BINDIR)/cage
 	mkdir -p $(HOME)/.config/cage
 	@echo "Installed cage $(VERSION) to $(BINDIR)/cage"
@@ -30,6 +31,12 @@ build:
 
 rebuild:
 	docker compose build --no-cache
+
+pull:
+	docker pull $(REGISTRY)/claude-code:$(VERSION)
+	docker tag $(REGISTRY)/claude-code:$(VERSION) claude-code:$(VERSION)
+	docker pull $(REGISTRY)/codex:$(VERSION)
+	docker tag $(REGISTRY)/codex:$(VERSION) codex:$(VERSION)
 
 version:
 	@echo $(VERSION)

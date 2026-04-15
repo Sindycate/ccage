@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-CAGE_VERSION="0.7.15"
+CAGE_VERSION="0.7.16"
+CAGE_REGISTRY="ghcr.io/sindycate/cage"
 
 HOST_CLAUDE_DIR="$HOME/.claude"
 CAGE_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/cage"
@@ -39,6 +40,7 @@ if [[ "${1:-}" == "claude" || "${1:-}" == "codex" ]]; then
 fi
 
 YOLO=0
+REBUILD=0
 NET_MODE=""  # empty = not explicitly set
 CAGE_PROFILE_FLAG=""
 
@@ -67,6 +69,10 @@ while [[ "${1:-}" == -* ]]; do
             [[ "$CAGE_PROFILE_FLAG" =~ ^[a-zA-Z0-9_-]+$ ]] || { echo "Invalid profile name: '$CAGE_PROFILE_FLAG' (use only letters, digits, hyphens, underscores)" >&2; exit 1; }
             shift
             ;;
+        --rebuild)
+            REBUILD=1
+            shift
+            ;;
         *)
             echo "Unknown option: $1" >&2
             exit 1
@@ -89,7 +95,7 @@ case "$NET_MODE" in
 esac
 
 if [ $# -lt 1 ]; then
-    echo "Usage: cage [claude|codex] [-y|--yolo] [--profile NAME] [--net open|gate|off] /path/to/repo [tool-args...]"
+    echo "Usage: cage [claude|codex] [-y|--yolo] [--rebuild] [--profile NAME] [--net open|gate|off] /path/to/repo [tool-args...]"
     echo ""
     echo "Tools:"
     echo "  claude    Run Claude Code (default)"
@@ -109,6 +115,7 @@ if [ $# -lt 1 ]; then
     echo "  --net open         Full network access (default without --yolo)"
     echo "  --net gate         Domain-gated network via proxy (default with --yolo)"
     echo "  --net off          No network access at all"
+    echo "  --rebuild          Force local rebuild (get latest tool version)"
     echo "  --version, -V      Show version and exit"
     echo "  --help, -h         Show this help and exit"
     echo ""
@@ -235,6 +242,7 @@ esac
 case "$CAGE_TOOL" in
     claude)
         IMAGE="claude-code:${CAGE_VERSION}"
+        REGISTRY_IMAGE="${CAGE_REGISTRY}/claude-code:${CAGE_VERSION}"
         CONTAINER_PREFIX="claude"
         VOLUME_PREFIX="claude-state"
         CONTAINER_HOME="/home/claude"
@@ -243,6 +251,7 @@ case "$CAGE_TOOL" in
         ;;
     codex)
         IMAGE="codex:${CAGE_VERSION}"
+        REGISTRY_IMAGE="${CAGE_REGISTRY}/codex:${CAGE_VERSION}"
         CONTAINER_PREFIX="codex"
         VOLUME_PREFIX="codex-state"
         CONTAINER_HOME="/home/codex"
@@ -260,10 +269,20 @@ fi
 CONTAINER_NAME="${CONTAINER_PREFIX}-${REPO_BASENAME}-${REPO_HASH}"
 VOLUME_NAME="${VOLUME_PREFIX}-${REPO_BASENAME}-${REPO_HASH}"
 
-# Auto-build if image missing
-if ! docker image inspect "$IMAGE" &>/dev/null; then
-    echo "Image $IMAGE not found. Building..."
-    docker build -t "$IMAGE" -t "${IMAGE%%:*}:latest" -f "$BUILD_DIR/$DOCKERFILE" "$BUILD_DIR"
+# Image acquisition: pull from registry, fall back to local build
+if [ "$REBUILD" -eq 1 ]; then
+    echo "Rebuilding $IMAGE from local Dockerfile..."
+    docker build --no-cache -t "$IMAGE" -t "${IMAGE%%:*}:latest" -f "$BUILD_DIR/$DOCKERFILE" "$BUILD_DIR"
+elif ! docker image inspect "$IMAGE" &>/dev/null; then
+    echo "Image $IMAGE not found locally."
+    if docker pull "$REGISTRY_IMAGE" 2>/dev/null; then
+        docker tag "$REGISTRY_IMAGE" "$IMAGE"
+        docker tag "$REGISTRY_IMAGE" "${IMAGE%%:*}:latest"
+        echo "Pulled $REGISTRY_IMAGE"
+    else
+        echo "Pull failed or unavailable. Building locally..."
+        docker build -t "$IMAGE" -t "${IMAGE%%:*}:latest" -f "$BUILD_DIR/$DOCKERFILE" "$BUILD_DIR"
+    fi
 fi
 
 YOLO_LABEL=""
