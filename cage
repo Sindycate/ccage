@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-CAGE_VERSION="0.7.16"
+CAGE_VERSION="0.7.17"
 CAGE_REGISTRY="ghcr.io/sindycate/cage"
 
 HOST_CLAUDE_DIR="$HOME/.claude"
@@ -30,6 +30,9 @@ case "${1:-}" in
     profiles|--profiles)
         shift
         source "$SCRIPT_DIR/cage-profiles.sh"; exit $? ;;
+    netgate|--netgate)
+        shift
+        source "$SCRIPT_DIR/cage-netgate.sh"; exit $? ;;
 esac
 
 # Subcommand detection: cage [claude|codex] [options] /path/to/repo [tool-args...]
@@ -108,6 +111,12 @@ if [ $# -lt 1 ]; then
     echo "  profiles show NAME        Show a profile's configuration"
     echo "  profiles set PATH NAME    Assign a profile to a folder"
     echo "  profiles reset PATH       Remove a folder's profile mapping"
+    echo "  netgate                    Manage domain allow/deny lists for --net gate"
+    echo "  netgate list [PATH]        Show rules (defaults + global + project)"
+    echo "  netgate allow DOMAIN       Allow a domain (project or --global)"
+    echo "  netgate deny DOMAIN        Deny a domain (project)"
+    echo "  netgate remove DOMAIN      Remove a decision (re-enables prompting)"
+    echo "  netgate reset [PATH]       Delete all project decisions"
     echo ""
     echo "Options:"
     echo "  --profile NAME     Use a named config profile (one-shot override)"

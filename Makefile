@@ -5,7 +5,7 @@ LIBDIR  ?= $(PREFIX)/share/cage
 VERSION  := $(shell grep '^CAGE_VERSION=' cage | cut -d'"' -f2)
 REGISTRY := ghcr.io/sindycate/cage
 
-DIST_FILES = cage cage-setup.sh cage-profiles.sh netgate-proxy.py docker-compose.yml \
+DIST_FILES = cage cage-setup.sh cage-profiles.sh cage-netgate.sh netgate-proxy.py docker-compose.yml \
              Dockerfile Dockerfile.codex \
              entrypoint.sh entrypoint-codex.sh
 
@@ -15,7 +15,7 @@ install:
 	mkdir -p $(LIBDIR) $(BINDIR)
 	cp $(DIST_FILES) $(LIBDIR)/
 	cp -r netgate $(LIBDIR)/
-	chmod +x $(LIBDIR)/cage $(LIBDIR)/cage-setup.sh $(LIBDIR)/cage-profiles.sh $(LIBDIR)/netgate-proxy.py
+	chmod +x $(LIBDIR)/cage $(LIBDIR)/cage-setup.sh $(LIBDIR)/cage-profiles.sh $(LIBDIR)/cage-netgate.sh $(LIBDIR)/netgate-proxy.py
 	ln -sf $(LIBDIR)/cage $(BINDIR)/cage
 	mkdir -p $(HOME)/.config/cage
 	@echo "Installed cage $(VERSION) to $(BINDIR)/cage"

@@ -138,6 +138,14 @@ Named profiles allow switching between configurations (e.g., work vs personal) w
 
 **Profile name validation:** `[a-zA-Z0-9_-]` only.
 
+## Netgate Management
+
+`cage netgate` manages domain allow/deny lists used by `--net gate` mode.
+
+**Storage:** `~/.claude/netgate/` directory (shared with `netgate-proxy.py`, NOT under `CAGE_CONFIG_DIR`). Three file tiers: `{SCRIPT_DIR}/netgate/defaults.json` (shipped, read-only), `global.json` (user always-allow), `project-{hash}.json` (per-project allow + deny).
+
+**`cage-netgate.sh`** (sourced for `cage netgate` subcommand): list rules, allow/deny domains, remove decisions, reset files. Uses `python3 -c` for JSON manipulation (no jq dependency). Hash computation mirrors the main cage script (`md5 -q` on macOS, `md5sum` on Linux, first 8 chars).
+
 ## Key Constraints
 
 - Host `~/.claude` is mounted **read-only** — entrypoint must copy/symlink, never write back
