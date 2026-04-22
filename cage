@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-CAGE_VERSION="0.7.18"
+CAGE_VERSION="0.7.19"
 CAGE_REGISTRY="ghcr.io/sindycate/cage"
 
 HOST_CLAUDE_DIR="$HOME/.claude"
@@ -378,8 +378,14 @@ fi
 MCP_BRIDGE_PID=""
 MCP_BRIDGE_ARGS=()
 MCP_LABEL=""
+MCP_JSON_BACKUP=""
 
 cleanup_mcp_bridge() {
+    # Restore .mcp.json if we patched it
+    if [ -n "$MCP_JSON_BACKUP" ] && [ -f "$MCP_JSON_BACKUP" ]; then
+        cp "$MCP_JSON_BACKUP" "$REPO_PATH/.mcp.json"
+        rm -f "$MCP_JSON_BACKUP"
+    fi
     if [ -n "$MCP_BRIDGE_PID" ] && kill -0 "$MCP_BRIDGE_PID" 2>/dev/null; then
         kill "$MCP_BRIDGE_PID" 2>/dev/null
         for _ in 1 2 3 4; do
@@ -439,8 +445,6 @@ if [ -n "${MCP_SERVERS:-}" ]; then
             done < <(grep "^SERVER:" "$MCP_BRIDGE_OUTPUT")
             CAGE_MCP_JSON+="}"
 
-            rm -f "$MCP_BRIDGE_OUTPUT"
-
             MCP_BRIDGE_ARGS+=(
                 -e "MCP_BRIDGE_HOST=host.docker.internal"
                 -e "CAGE_MCP_SERVERS=${CAGE_MCP_JSON}"
@@ -450,6 +454,28 @@ if [ -n "${MCP_SERVERS:-}" ]; then
             if [ "$NET_MODE" != "gate" ]; then
                 MCP_BRIDGE_ARGS+=(--add-host host.docker.internal:host-gateway)
             fi
+
+            # Patch .mcp.json in the repo if it defines any bridged servers
+            if [ -f "$REPO_PATH/.mcp.json" ]; then
+                MCP_JSON_BACKUP=$(mktemp)
+                cp "$REPO_PATH/.mcp.json" "$MCP_JSON_BACKUP"
+                python3 -c "
+import json, sys
+with open('$REPO_PATH/.mcp.json') as f:
+    cfg = json.load(f)
+bridged = set(sys.argv[1:])
+changed = False
+for name in list(cfg.get('mcpServers', {})):
+    if name in bridged:
+        cfg['mcpServers'][name] = {'type': 'stdio', 'command': 'mcp-relay', 'args': [name]}
+        changed = True
+if changed:
+    with open('$REPO_PATH/.mcp.json', 'w') as f:
+        json.dump(cfg, f, indent=4)
+" $(grep "^SERVER:" "$MCP_BRIDGE_OUTPUT" | sed 's/^SERVER:\(.*\)=PORT:.*/\1/') 2>/dev/null || true
+            fi
+
+            rm -f "$MCP_BRIDGE_OUTPUT"
 
             MCP_LABEL=" [MCP]"
 

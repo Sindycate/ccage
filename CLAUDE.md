@@ -115,6 +115,7 @@ cage --net off ~/path/to/repo
 - Tiny Python script that connects container stdio to the host MCP bridge via TCP
 - Usage: `mcp-relay <server-name>` — reads `MCP_BRIDGE_HOST` and `MCP_BRIDGE_PORT_<NAME>` env vars
 - Configured as the MCP server command in Claude Code's `settings.json` by the entrypoint
+- If the repo has `.mcp.json` with matching server names, cage patches it before launch and restores the original on exit
 
 **`Makefile`**: Install/uninstall targets. `make install` copies files to `~/.local/share/cage/` and symlinks to `~/.local/bin/cage`.
 
