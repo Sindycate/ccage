@@ -57,7 +57,7 @@ cage --net off ~/path/to/repo
 - Takes a repo path, derives a unique container name + Docker volume via md5 hash of the full path
 - Loads config in layers: `~/.config/cage/cage.conf` (global) → `profiles/<name>.conf` (named profile) → `<repo>/.cage.conf` (per-project override)
 - Runs `docker run` with security hardening (cap_drop ALL, no-new-privileges) and tool-specific mounts:
-  - Repo at `/workspace/{reponame}` (read-write) — the only writable host path; unique path gives each project its own identity in Claude Code
+  - Repo at the **same absolute path as on host** (read-write) — mirrored so Claude's project slug (derived from cwd) matches on both sides, enabling session-history sync. This is the only writable host path. A guard rejects paths that would collide with the container filesystem (`/etc`, `/var`, `/home/claude`, etc.)
   - **Claude (bedrock auth):** `~/.aws/credentials` read-only, `~/.claude` read-only at `/host-claude`
   - **Claude (api-key auth):** `ANTHROPIC_API_KEY` env var, `~/.claude` read-only at `/host-claude`
   - **Codex:** `~/.codex` read-only at `/host-codex` for auth, `OPENAI_API_KEY` env var if set
@@ -167,6 +167,7 @@ Named profiles allow switching between configurations (e.g., work vs personal) w
 
 - Host `~/.claude` is mounted **read-only** — entrypoint must copy/symlink, never write back
 - `~/.claude.json` lives at `$HOME/.claude.json` (outside `$HOME/.claude/`), so the entrypoint symlinks it into the volume
+- **Session history sync** (Claude, default on): cage mirrors `~/.claude/projects/-<repo-slug>/` between host and per-repo Docker volume on entry/exit. All host-side writes happen from the host cage script running as the host user — the container's read-only `/host-claude` mount is unchanged. Sync is scoped to the single project's `*.jsonl` files, size-guarded (append-only → larger = newer). First-run migration copies pre-existing `-workspace-<name>/` sessions into the new slug with rewritten `cwd`, leaving the legacy dir intact as a fallback. Disable with `SESSION_SYNC=0` in `cage.conf`
 - Claude auth is configured via `CLAUDE_AUTH` in `cage.conf`: `bedrock` (mounts `~/.aws/credentials`) or `api-key` (passes `ANTHROPIC_API_KEY` env var)
 - Codex auth uses `~/.codex/` directory (sign in on host first) or `OPENAI_API_KEY` env var. Set `CODEX_COPY_AUTH=0` in `cage.conf` to skip copying `auth.json` (for non-OpenAI providers like Azure OpenAI)
 - GitHub CLI auth is **off by default**. Set `GH_AUTH=1` in `cage.conf` to enable. When enabled: cage auto-extracts the token via `gh auth token` on the host (works with keychain-based auth), or passes `GH_TOKEN`/`GITHUB_TOKEN` env var if set. `~/.config/gh/` is mounted read-only for non-auth settings. Set `GH_ACCOUNT` in `.cage.conf` for per-project account selection
@@ -174,6 +175,6 @@ Named profiles allow switching between configurations (e.g., work vs personal) w
 - Network gating (`--net gate`) only covers HTTP/HTTPS traffic routed via proxy env vars. Raw TCP/SSH/DNS bypass the proxy (including `git push` over SSH)
 - Git push requires `cage.conf` with `SSH_KEY` pointing to a private key. Passphrase-protected keys work but will prompt each time (ssh-agent is not available in the container)
 - Allowlists: global at `~/.claude/netgate/global.json`, per-project at `~/.claude/netgate/project-{hash}.json`
-- When `--net gate` or MCP bridge is active, cage does NOT use `exec docker run` (needs shell alive for cleanup)
+- When `--net gate`, MCP bridge, or session sync is active, cage does NOT use `exec docker run` (needs shell alive for cleanup)
 - MCP bridge (`MCP_SERVERS` in cage.conf) runs host commands and relays stdio MCP protocol into the container via TCP on `host.docker.internal`. Incompatible with `--net off`. When `--net gate` is also active, MCP bridge traffic bypasses the netgate proxy (direct TCP, not HTTP)
 - **Container security:** Both Claude and Codex containers use `apparmor=unconfined` and `seccomp=unconfined` so bubblewrap can create user namespaces for subprocess isolation/sandboxing. `--cap-drop ALL` still applies. Entrypoints run as root for UID remapping then switch to the target user via `gosu`. Users have passwordless `sudo` for installing packages (Playwright, etc.) — the container itself is the security boundary

@@ -129,7 +129,7 @@ AWS_REGION=us-east-1
 
 | Mount | Path in container | Access |
 |-------|-------------------|--------|
-| Your repo | `/workspace` | **read-write** |
+| Your repo | same absolute path as on host | **read-write** |
 | `~/.aws/credentials` *(bedrock only)* | `/home/claude/.aws/credentials` | read-only |
 | `~/.claude` | `/host-claude` | read-only |
 | Docker volume (per-repo) | `/home/claude/.claude` | read-write |
@@ -140,7 +140,7 @@ AWS_REGION=us-east-1
 
 | Mount | Path in container | Access |
 |-------|-------------------|--------|
-| Your repo | `/workspace` | **read-write** |
+| Your repo | same absolute path as on host | **read-write** |
 | `~/.codex` | `/host-codex` | read-only |
 | Docker volume (per-repo) | `/home/codex/.codex` | read-write |
 | SSH key (from `cage.conf`) | `/home/codex/.ssh/id` | read-only |

@@ -159,6 +159,7 @@ _run_setup() {
                 GIT_USER_NAME="" GIT_USER_EMAIL="" SSH_KEY="" SSH_HOST=""
                 CAGE_DEFAULT="" CLAUDE_AUTH="" AWS_PROFILE="" AWS_REGION=""
                 EXTRA_ENV="" CODEX_COPY_AUTH="" GH_AUTH="" GH_ACCOUNT=""
+                SESSION_SYNC=""
                 ;;
             2)
                 EDIT_MODE=1
@@ -263,6 +264,29 @@ _run_setup() {
                 fi
                 ;;
         esac
+    fi
+
+    # --- Phase 3b: Claude session sync --------------------------------------
+
+    local cfg_SESSION_SYNC=""
+
+    if [ "$USE_CLAUDE" -eq 1 ]; then
+        _header "Claude Session History Sync"
+
+        _dim "Syncs per-project Claude session history between host ~/.claude"
+        _dim "and the per-repo Docker volume, so host and cage can resume each"
+        _dim "other's sessions and tools like 'npx ccusage' see unified history."
+        _dim "Host writes happen from the cage script (host user), not the container."
+        echo ""
+
+        local sync_default_yn="Y"
+        [ "$EDIT_MODE" -eq 1 ] && [ "${SESSION_SYNC:-}" = "0" ] && sync_default_yn="N"
+
+        if _prompt_yn "Enable session history sync?" "$sync_default_yn"; then
+            cfg_SESSION_SYNC="1"
+        else
+            cfg_SESSION_SYNC="0"
+        fi
     fi
 
     # --- Phase 4: Codex auth ------------------------------------------------
@@ -466,6 +490,14 @@ _run_setup() {
             _add_line "CLAUDE_AUTH=api-key"
             _add_line "# AWS_PROFILE="
             _add_line "# AWS_REGION="
+        fi
+        _add_line ""
+
+        _add_line "# Sync Claude session history between host and cage (default on)"
+        if [ "$cfg_SESSION_SYNC" = "0" ]; then
+            _add_line "SESSION_SYNC=0"
+        else
+            _add_line "# SESSION_SYNC=1"
         fi
         _add_line ""
     fi
