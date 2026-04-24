@@ -42,6 +42,8 @@ if [ -d /host-codex ]; then
         [ "$name" = "." ] || [ "$name" = ".." ] && continue
         cp -rf "$f" "$CODEX_DIR/"
     done
+    # cp ran as root and preserved host mode bits; re-own so the codex user can read them
+    chown -R "$TARGET_USER":"$(id -gn "$TARGET_USER")" "$CODEX_DIR" 2>/dev/null || true
 fi
 
 # Inject cage container context into instructions.md
@@ -90,6 +92,7 @@ if [ -d /host-gh ]; then
     GH_CONFIG_DIR="${HOME}/.config/gh"
     mkdir -p "$GH_CONFIG_DIR"
     cp -rf /host-gh/* "$GH_CONFIG_DIR/" 2>/dev/null || true
+    chown -R "$TARGET_USER":"$(id -gn "$TARGET_USER")" "$GH_CONFIG_DIR" 2>/dev/null || true
 fi
 
 cd "$WORK_DIR"

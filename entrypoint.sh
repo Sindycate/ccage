@@ -23,7 +23,7 @@ PREFS_STORE="$CLAUDE_DIR/.claude.json"
 ln -sfn "$PREFS_STORE" "$HOME/.claude.json"
 
 # Copy host settings (read-only mount → writable volume)
-[ -f /host-claude/settings.json ] && { rm -f "$CLAUDE_DIR/settings.json" 2>/dev/null; cp /host-claude/settings.json "$CLAUDE_DIR/settings.json"; }
+[ -f /host-claude/settings.json ] && { rm -f "$CLAUDE_DIR/settings.json" 2>/dev/null; cp /host-claude/settings.json "$CLAUDE_DIR/settings.json"; chown "$TARGET_USER":"$(id -gn "$TARGET_USER")" "$CLAUDE_DIR/settings.json" 2>/dev/null || true; }
 
 # statusLine.command may reference a script in ~/.claude/ which is read-only in-container
 _sl_cmd=$(jq -r '.statusLine.command // empty' "$CLAUDE_DIR/settings.json" 2>/dev/null)
@@ -92,6 +92,7 @@ if [ -d /host-gh ]; then
     GH_CONFIG_DIR="${HOME}/.config/gh"
     mkdir -p "$GH_CONFIG_DIR"
     cp -rf /host-gh/* "$GH_CONFIG_DIR/" 2>/dev/null || true
+    chown -R "$TARGET_USER":"$(id -gn "$TARGET_USER")" "$GH_CONFIG_DIR" 2>/dev/null || true
 fi
 
 cd "$WORK_DIR"
