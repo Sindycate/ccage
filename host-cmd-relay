@@ -4,6 +4,12 @@
 Unlike mcp-relay, this relay is used for one-shot commands that may not
 read stdin. When stdin closes, we must NOT exit — we keep draining the
 socket so the command's stdout reaches the caller before we terminate.
+
+We also do NOT call sock.shutdown(SHUT_WR) on stdin EOF: Docker Desktop's
+vpnkit NAT on macOS turns a half-close into a full close for the peer,
+which causes the bridge to lose the subprocess's still-in-flight stdout.
+Instead we just stop watching stdin; the bridge closes the connection
+when the subprocess exits.
 """
 import os
 import select
@@ -41,10 +47,6 @@ try:
                 data = os.read(stdin_fd, BUFSIZE)
                 if not data:
                     stdin_open = False
-                    try:
-                        sock.shutdown(socket.SHUT_WR)
-                    except OSError:
-                        pass
                 else:
                     sock.sendall(data)
 except (BrokenPipeError, ConnectionResetError, OSError):
