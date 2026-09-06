@@ -1720,10 +1720,9 @@ class Orchestrator:
             f"{bounded(str(last_error or 'unknown error'), 800)}"
         ) from last_error
 
-    def _inspect_image_once(self, ref: str, env: Optional[dict] = None) -> dict:
+    def _inspect_image_once(self, ref: str) -> dict:
         # The Registry API provides the top-level digest and platform index
         # portably. Do not require the optional Docker Buildx CLI plugin here.
-        del env  # retained in the private signature for compatibility
         try:
             manifest = self.image_inspector(ref)
         except VerificationError:
@@ -1734,10 +1733,10 @@ class Orchestrator:
             raise VerificationError(f"could not inspect {ref}: invalid manifest object")
         return manifest
 
-    def _inspect_image(self, ref: str, env: Optional[dict] = None) -> dict:
+    def _inspect_image(self, ref: str) -> dict:
         return self._retry_idempotent_operation(
             f"registry inspect {ref}",
-            lambda: self._inspect_image_once(ref, env=env),
+            lambda: self._inspect_image_once(ref),
         )
 
     def _release_json(self) -> dict:

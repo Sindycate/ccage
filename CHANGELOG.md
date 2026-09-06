@@ -5,6 +5,14 @@ details live in the linked migration guide.
 
 ## Unreleased
 
+## 0.36.7 — 2026-09-06
+
+- remove unused imports, an uncalled Desktop error helper, an overwritten bridge
+  alias and discarded private publisher arguments;
+- simplify release test capture and stale fixture setup, and remove one leaf
+  registry test fully covered by a stronger existing test. Runtime policy,
+  configuration and state contracts are unchanged.
+
 ## 0.36.6 — 2026-09-06
 
 - make repository agent instructions a concise contributor entry point with

@@ -1318,16 +1318,15 @@ class CandidateResolveFailClosedTests(unittest.TestCase):
 
 
 class CandidateLeafResolveFailClosedTests(unittest.TestCase):
-    """Execute the matrix leaf candidate resolve block against stubbed curl/docker/gh."""
+    """Execute the leaf candidate planning block against stubbed curl/docker/gh."""
 
     @classmethod
     def setUpClass(cls):
-        raw_script = _extract_run_block(
+        cls.script = _extract_run_block(
             CI_WORKFLOW, "Resolve final leaf candidates"
         )
-        assert ". .github/scripts/ghcr-status.sh" in raw_script
-        assert "ghcr_status" in raw_script
-        cls.script = raw_script.replace("${{ matrix.image }}", "claude-code")
+        assert ". .github/scripts/ghcr-status.sh" in cls.script
+        assert "ghcr_status" in cls.script
 
     def _run_resolve(
         self, mode, attest="ok", sha=None, platforms=None, missing_repo=None
@@ -1414,11 +1413,6 @@ class CandidateLeafResolveFailClosedTests(unittest.TestCase):
         result, _ = self._run_resolve("denied")
         self.assertEqual(result.returncode, 1)
         self.assertIn("ambiguous registry status (403)", result.stderr)
-
-    def test_registry_5xx_fails_closed(self):
-        result, _ = self._run_resolve("server")
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("ambiguous registry status (503)", result.stderr)
 
     def test_timeout_fails_closed(self):
         result, _ = self._run_resolve("timeout")

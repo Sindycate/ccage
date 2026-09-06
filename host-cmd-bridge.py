@@ -7,12 +7,9 @@ and is always executed with ``shell=False`` from a trusted working directory.
 """
 
 import argparse
-import hmac
 import json
 import os
 import re
-import shlex
-import shutil
 import signal
 import socket
 import struct
@@ -68,7 +65,6 @@ build_child_environment = bridge_common.build_child_environment
 normalize_denied_roots = bridge_common.normalize_denied_roots
 sanitize_child_path = bridge_common.sanitize_child_path
 pin_executable = bridge_common.pin_executable
-terminate_process_group = bridge_common.terminate_process_group
 
 def parse_named_commands(entries):
     return bridge_common.parse_named_commands(

@@ -57,10 +57,6 @@ class DesktopError(RuntimeError):
     pass
 
 
-def die(message: str) -> None:
-    raise DesktopError(message)
-
-
 def read_bounded(path: Path, *, missing_ok: bool = False) -> bytes:
     try:
         before = os.lstat(path)

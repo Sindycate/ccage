@@ -7,11 +7,8 @@ host command: commands come from Cage's host-owned central configuration.
 """
 
 import argparse
-import hmac
 import os
 import re
-import shlex
-import shutil
 import signal
 import socket
 import subprocess

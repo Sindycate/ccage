@@ -1938,13 +1938,8 @@ class JsonOutputTests(PublishReleaseTestCase):
             ci_runs=[make_run(sha)],
             release_runs=[make_run(sha, databaseId=22, branch="v0.26.7")],
         )
-        orch, *_ = make_orch(scenario, dry_run=True, json_output=True)
+        orch, _, _, _, captured, _ = make_orch(scenario, dry_run=True, json_output=True)
         orch.run()
-        orch.render_json()
-        stdout = "\n".join(orch._out.__self__ if False else [])  # placeholder
-        # out_lines were captured by the factory; re-render into a fresh collector.
-        captured = []
-        orch._out = captured.append
         orch.render_json()
         self.assertEqual(len(captured), 1)
         payload = json.loads(captured[0])

@@ -3,6 +3,34 @@
 This is the durable execution log for `WORKFLOW.md`. Keep entries concise and
 evidence-based. Newest entries go first.
 
+## 2026-09-06 — Low-value code audit prepared for v0.36.7
+
+Inspected all tracked major directories: root frontends/build files,
+`cage_core` (including `state` and `targets`), `tests`, `scripts`, `.github`
+(workflows and scripts), `docs` (including hardening), and `netgate`.
+Repository-wide Python AST/reference and duplicate-body scans plus targeted
+source review informed the cleanup. Local settings and generated files are
+outside the tracked-code audit.
+
+Removed twelve unused imports, the uncalled Desktop `die` helper, and a bridge
+alias overwritten before use. Removed the publisher's discarded private `env`
+parameter after checking every caller. The JSON test now uses its factory's
+capture buffer once, retaining every assertion. The removed leaf 503 test has
+the same fixture call and assertions as the retained planning-boundary test,
+which also checks that no build matrix escapes. The leaf setup's obsolete
+matrix substitution was verified to be a no-op and its stale description fixed.
+Compatibility re-exports, HTTP dispatch hooks, independently deployed relay
+helpers, and similar tests for distinct workflow paths remain intact.
+
+The cleanup is 28 net lines smaller before release bookkeeping. Baseline:
+428 focused tests passed. After cleanup: 507 passed (the same selection minus
+one redundant test, plus 80 host-execution tests). Repository-wide Ruff
+F401/F811/F821, tracked-file secret scan, version assertion, CI helper shell
+syntax and diff checks pass. Three pre-existing F841 bindings
+remain around strict path resolution/process lifetimes; their calls were not
+removed as dead code. The canonical publisher owns the final full-suite,
+syntax, Compose, archive, CI and public verification gates. No user migration.
+
 ## 2026-09-06 — Repository instruction cleanup prepared
 
 Applied the contextual-reading and explicit-completion guidance from

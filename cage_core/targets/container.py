@@ -32,7 +32,7 @@ from ..lifecycle import (
     terminate_process,
     wait_for_line,
 )
-from ..planning import CAGE_REGISTRY, PreparedLaunch
+from ..planning import PreparedLaunch
 from ..state import (
     ClaudeSessionSync,
     OAuthReconciler,

@@ -9,7 +9,6 @@ equals the resolved preset's selected packs on every launch.
 import importlib.util
 import json
 import os
-import re
 from contextlib import contextmanager
 from pathlib import Path
 import shutil

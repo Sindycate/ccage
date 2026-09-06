@@ -1021,7 +1021,6 @@ class TestCodexExecutablePinning(unittest.TestCase):
         (cage_dir / "config.toml").write_text(HOST_CONFIG, encoding="utf-8")
         env = make_env(tmp_path, bin_dir, home, xdg)
         # Filter out any directory containing a real codex binary
-        import shutil as _shutil
         system_paths = [
             p for p in os.environ.get("PATH", "").split(os.pathsep)
             if p and not (Path(p) / "codex").exists()
