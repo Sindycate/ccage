@@ -5,6 +5,15 @@ details live in the linked migration guide.
 
 ## Unreleased
 
+## 0.36.6 — 2026-09-06
+
+- make repository agent instructions a concise contributor entry point with
+  task-specific documentation links, move detailed commands and architecture
+  into `docs/DEVELOPER_REFERENCE.md`, and scope hardening resume reads to the
+  active packet;
+- clarify local test authority, proportionate validation and completion while
+  preserving security invariants and the canonical public-release gate.
+
 ## 0.36.5 — 2026-09-04
 
 - build candidate images one architecture at a time on native amd64 and arm64

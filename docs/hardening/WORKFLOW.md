@@ -185,13 +185,12 @@ The workflow is done when:
 
 ## Compaction and resume instructions
 
-After compaction or handoff, read these files before taking action:
-
-1. `AGENTS.md`
-2. `docs/hardening/WORKFLOW.md`
-3. `docs/hardening/PROGRESS.md`
-4. `docs/hardening/MIGRATIONS.md`
-5. `git status -sb` and the current branch diff
+When resuming this hardening workflow after compaction or handoff, inspect
+`AGENTS.md`, this workflow, and the current branch status/diff. Find the latest
+checkpoint for the active packet in `PROGRESS.md` and its applicable migration
+entries in `MIGRATIONS.md`; consult older history only when needed to resolve a
+dependency or uncertainty. Unrelated tasks use the task-specific reference map
+in `AGENTS.md` instead of loading the hardening history.
 
 For an in-progress release, do not reconstruct or manually replay its phases
 after compaction. Invoke the canonical publisher from the matching clean

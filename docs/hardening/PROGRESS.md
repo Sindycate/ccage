@@ -3,6 +3,33 @@
 This is the durable execution log for `WORKFLOW.md`. Keep entries concise and
 evidence-based. Newest entries go first.
 
+## 2026-09-06 — Repository instruction cleanup prepared
+
+Applied the contextual-reading and explicit-completion guidance from
+[Eric Provencher's article](https://x.com/pvncher/status/2095991462416490862)
+to Cage's repository instructions. `AGENTS.md` now contains contributor policy,
+critical cross-target invariants and a task-specific reference map. Detailed
+commands, architecture and compatibility contracts moved to
+`docs/DEVELOPER_REFERENCE.md`; `CLAUDE.md` remains the canonical import. No
+repository-local skills were present. Personal skills and global instructions
+are outside this change.
+
+Hardening resume guidance now selects the active packet's checkpoint and
+migration entries. Local fixture authority and validation scope are explicit;
+security boundaries and the required `public_verified` release completion gate
+are preserved. Also corrected the moved reference's stale shell-lifecycle and
+container-boundary wording. Runtime behavior is unchanged apart from the
+release version. The short container environment prompts already describe
+capabilities and trust boundaries concisely and remain unchanged.
+
+The root instructions shrink from 718 lines / 8,394 words to 110 lines /
+914 words (89.1% fewer words). All 27 local links/anchors resolve and the Claude
+import is intact. Python/shell/Node syntax, Compose rendering, diff checks and
+a redacted working-tree secret scan pass. The full Python run passed 707 tests
+and skipped 15; its three stale version/documentation assertions were updated
+and all three pass on focused rerun. The canonical publisher owns the final
+full-suite gate and public verification for this prepared v0.36.6 checkpoint.
+
 ## 2026-09-04 — Candidate source digest and media validation tightened
 
 The pre-create native source-index check now rejects a child digest repeated

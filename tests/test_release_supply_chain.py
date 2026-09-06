@@ -43,14 +43,29 @@ class ReleaseSupplyChainTests(unittest.TestCase):
         )
 
         for fragment in (
-            "only a *prepared release candidate*",
-            "the exact commit is on remote `main`",
-            "the canonical publisher reaches `public_verified`",
-            "fresh unauthenticated",
-            "never ask them to check out or locally test repository `main`",
-            "Do not pause for a redundant push/tag/",
+            "Every tracked Cage change, including docs and tests, is release-bound unless",
+            "Complete release-bound work at `public_verified`",
+            "exact remote commit, passing CI, immutable tag, GitHub Release",
+            "public installer verified by that publisher",
+            "Do not ask the owner to test a local candidate",
+            "Standing owner authorization covers ordinary in-scope publication",
+            "unpublished `prepared` work",
         ):
             self.assertIn(fragment, agent_instructions)
+
+        self.assertIn(
+            "[canonical publisher](README.md#maintainer-release-process)",
+            agent_instructions,
+        )
+        release_reference = re.sub(
+            r"\s+", " ", (ROOT / "README.md").read_text(encoding="utf-8")
+        ).split("## Maintainer release process", 1)[1].split("## Updating", 1)[0]
+        for fragment in (
+            "public installer — fetched anonymously from the published tag",
+            "all credentials stripped",
+            "installs into temporary directories and reports the right version",
+        ):
+            self.assertIn(fragment, release_reference)
 
         for fragment in (
             "The product owner does not test local `main`",
@@ -70,12 +85,11 @@ class ReleaseSupplyChainTests(unittest.TestCase):
         )
 
         for fragment in (
-            "as the single release orchestrator",
-            "`--dry-run` is diagnostic, not a mandatory duplicate gate",
-            "routine `gh run view`/`watch` polling",
-            "final schema-v2 JSON result",
-            "resume the same journaled command",
-            "minimizes wall time, tool calls, and token use",
+            "`scripts/publish_release.py`",
+            "owns CI/public validation",
+            "avoid duplicating a healthy publisher's checks or polling",
+            "resume the same publisher journal",
+            "Manual publication is emergency recovery only",
         ):
             self.assertIn(fragment, agent_instructions)
 
